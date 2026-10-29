@@ -1,0 +1,6 @@
+.venv
+.env
+tasks.db
+**/__pycache__
+.coverage
+htmlcov

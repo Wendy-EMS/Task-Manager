@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+tasks.db
+.coverage
+htmlcov/
+.ruff_cache/

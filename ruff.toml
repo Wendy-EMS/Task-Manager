@@ -1,0 +1,4 @@
+exclude = [".venv"]
+
+[lint]
+select = ["E9", "F"]

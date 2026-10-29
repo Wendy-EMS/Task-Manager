@@ -1,0 +1,136 @@
+{
+  "info": {
+    "name": "Tâches",
+    "description": "Collection des routes de tâches. Envoyer les requêtes dans l’ordre : la lecture, le remplacement et la suppression portent sur la tâche créée juste avant. Le serveur doit déjà tourner.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Santé",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Attendu 200 et {\"status\":\"ok\"}."
+      }
+    },
+    {
+      "name": "Lister les tâches",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/tasks?skip=0&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks"],
+          "query": [
+            {
+              "key": "skip",
+              "value": "0"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            },
+            {
+              "key": "done",
+              "value": "true",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Attendu 200 et une liste. skip vaut 0 et limit vaut 10. done est facultatif."
+      }
+    },
+    {
+      "name": "Créer une tâche",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Apprendre FastAPI\", \"priority\": \"medium\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/tasks",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks"]
+        },
+        "description": "Attendu 201, avec id, done à false et priority à medium."
+      }
+    },
+    {
+      "name": "Lire une tâche",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/tasks/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "1"]
+        },
+        "description": "Attendu 200 pour la tâche créée, ou 404 si cet id n’existe plus."
+      }
+    },
+    {
+      "name": "Remplacer une tâche",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Apprendre FastAPI\", \"done\": true, \"priority\": \"medium\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/tasks/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "1"]
+        },
+        "description": "Attendu 200. title, done et priority sont tous présents."
+      }
+    },
+    {
+      "name": "Supprimer une tâche",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/tasks/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "1"]
+        },
+        "description": "Attendu 204."
+      }
+    }
+  ]
+}
