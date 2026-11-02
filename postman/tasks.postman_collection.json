@@ -1,37 +1,241 @@
 {
   "info": {
     "name": "Tâches",
-    "description": "Collection des routes de tâches. Envoyer les requêtes dans l’ordre : la lecture, le remplacement et la suppression portent sur la tâche créée juste avant. Le serveur doit déjà tourner.",
+    "description": "Collection de l’API de tâches. Choisir l’environnement « Tâches - local » ou « Tâches - production », qui définit base_url, puis lancer les requêtes dans l’ordre (ou avec le Collection Runner). L’inscription crée un compte avec un email unique, la connexion enregistre le jeton dans la variable token, et la création enregistre l’id de la tâche dans task_id.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://127.0.0.1:8000"
-    }
-  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
     {
       "name": "Santé",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 et status ok\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().status).to.eql(\"ok\");",
+              "});"
+            ]
+          }
+        }
+      ],
       "request": {
+        "auth": { "type": "noauth" },
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/health",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
           "path": ["health"]
         },
         "description": "Attendu 200 et {\"status\":\"ok\"}."
       }
     },
     {
+      "name": "Inscription",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set(\"email\", \"postman-\" + Date.now() + \"@example.com\");",
+              "if (!pm.environment.get(\"password\")) {",
+              "    pm.environment.set(\"password\", \"motdepasse-postman\");",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201 et compte créé sans mot de passe\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.email).to.eql(pm.environment.get(\"email\"));",
+              "    pm.expect(body).to.not.have.property(\"password\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"{{email}}\", \"password\": \"{{password}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/register",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "register"]
+        },
+        "description": "Attendu 201. Un email unique est généré à chaque envoi."
+      }
+    },
+    {
+      "name": "Connexion",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 et jeton Bearer\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.token_type).to.eql(\"bearer\");",
+              "    pm.environment.set(\"token\", body.access_token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"{{email}}\", \"password\": \"{{password}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Attendu 200. Le jeton est enregistré dans la variable token, utilisée par les requêtes suivantes."
+      }
+    },
+    {
+      "name": "Lister sans jeton",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"401 sans jeton\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/tasks",
+          "host": ["{{base_url}}"],
+          "path": ["tasks"]
+        },
+        "description": "Attendu 401 : les tâches exigent un jeton."
+      }
+    },
+    {
+      "name": "Créer une tâche",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201 et tâche créée\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.done).to.eql(false);",
+              "    pm.expect(body.priority).to.eql(\"medium\");",
+              "    pm.environment.set(\"task_id\", body.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Apprendre FastAPI\", \"priority\": \"medium\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/tasks",
+          "host": ["{{base_url}}"],
+          "path": ["tasks"]
+        },
+        "description": "Attendu 201, avec id, done à false et priority à medium. L’id est enregistré dans task_id."
+      }
+    },
+    {
       "name": "Lister les tâches",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 et liste\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+              "});"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/tasks?skip=0&limit=10",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{base_url}}/tasks?skip=0&limit=10",
+          "host": ["{{base_url}}"],
           "path": ["tasks"],
           "query": [
             {
@@ -53,47 +257,48 @@
       }
     },
     {
-      "name": "Créer une tâche",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\"title\": \"Apprendre FastAPI\", \"priority\": \"medium\"}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrl}}/tasks",
-          "host": ["{{baseUrl}}"],
-          "path": ["tasks"]
-        },
-        "description": "Attendu 201, avec id, done à false et priority à medium."
-      }
-    },
-    {
       "name": "Lire une tâche",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 et bonne tâche\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(String(pm.response.json().id)).to.eql(String(pm.environment.get(\"task_id\")));",
+              "});"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/tasks/1",
-          "host": ["{{baseUrl}}"],
-          "path": ["tasks", "1"]
+          "raw": "{{base_url}}/tasks/{{task_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["tasks", "{{task_id}}"]
         },
-        "description": "Attendu 200 pour la tâche créée, ou 404 si cet id n’existe plus."
+        "description": "Attendu 200 pour la tâche créée juste avant."
       }
     },
     {
       "name": "Remplacer une tâche",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 et tâche terminée\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().done).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "PUT",
         "header": [
@@ -112,22 +317,35 @@
           }
         },
         "url": {
-          "raw": "{{baseUrl}}/tasks/1",
-          "host": ["{{baseUrl}}"],
-          "path": ["tasks", "1"]
+          "raw": "{{base_url}}/tasks/{{task_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["tasks", "{{task_id}}"]
         },
         "description": "Attendu 200. title, done et priority sont tous présents."
       }
     },
     {
       "name": "Supprimer une tâche",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"204\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "DELETE",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/tasks/1",
-          "host": ["{{baseUrl}}"],
-          "path": ["tasks", "1"]
+          "raw": "{{base_url}}/tasks/{{task_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["tasks", "{{task_id}}"]
         },
         "description": "Attendu 204."
       }

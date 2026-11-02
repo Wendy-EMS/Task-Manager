@@ -1,0 +1,16 @@
+.env
+.venv/
+tasks.db
+tests/
+postman/
+.github/
+Dockerfile
+docker-compose.yml
+docker-entrypoint.sh
+.dockerignore
+requirements-dev.txt
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+__pycache__/

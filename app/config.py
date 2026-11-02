@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import List
 
@@ -19,7 +20,20 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=_ROOT / ".env",
         extra="ignore",
+        validate_default=True,
     )
+
+    @field_validator("database_url")
+    @classmethod
+    def database_url_uses_psycopg(cls, value: str) -> str:
+        url = value.strip()
+        for prefix in ("postgres://", "postgresql://"):
+            if url.startswith(prefix):
+                url = "postgresql+psycopg://" + url[len(prefix):]
+                break
+        if url.startswith("sqlite") and os.environ.get("VERCEL"):
+            raise ValueError("DATABASE_URL doit pointer vers PostgreSQL sur Vercel")
+        return url
 
     @field_validator("jwt_secret")
     @classmethod
